@@ -1,0 +1,5 @@
+{
+  "name": "segredos",
+  "owner": { "name": "Marcos Vieira" },
+  "plugins": [{ "name": "segredos", "source": "./" }]
+}
