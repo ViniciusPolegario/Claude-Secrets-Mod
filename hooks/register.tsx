@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { SecretRow } from '../types'
-import { NAME, cited, mask, maskDeep, parse, parseProcKeys, parseTtl, serialize, wrap, PREFIX } from './lib.ts'
+import { BULLET, NAME, cited, mask, maskDeep, parse, parseProcKeys, parseTtl, serialize, unmask, wrap, PREFIX } from './lib.ts'
 import type { Secrets } from './lib.ts'
 
 const PANE = 'segredos'
@@ -45,6 +45,10 @@ let hasKeyctl = false
 let draftName = ''
 let draftTtl = ''
 let draftPermanent = false
+// O valor digitado: o campo só mostra BULLET.
+let draftValue = ''
+// Muda a cada salvar: campos com chave nova são desenhados de novo, vazios.
+let form = 0
 // Sem prazo digitado, o segredo é temporário por este tempo; permanente só marcando a caixa.
 const DEFAULT_TTL = '8h'
 let notice = ''
@@ -316,7 +320,8 @@ async function dropTemporary($: EngineInterface, name: string) {
   if (got.exitCode === 0) await keyctl($, ['invalidate', got.stdout.trim()])
 }
 
-async function add($: EngineInterface, value: string) {
+async function add($: EngineInterface) {
+  const value = draftValue
   const name = draftName.trim()
   const ttlText = draftTtl.trim() === '' ? DEFAULT_TTL : draftTtl.trim()
   const ttl = draftPermanent ? undefined : parseTtl(ttlText)
@@ -351,6 +356,8 @@ async function add($: EngineInterface, value: string) {
     draftName = ''
     draftTtl = ''
     draftPermanent = false
+    draftValue = ''
+    form++
   }
   await load($)
   $.ui.invalidate('ui.render')
@@ -508,7 +515,7 @@ export const register: Register = on => {
         <Box flexDirection="column" gap={1}>
           <Text weight="semibold">Novo segredo</Text>
           <Input
-            key="name"
+            key={`name-${form}`}
             label="Nome "
             placeholder="GITHUB_TOKEN"
             value={draftName}
@@ -531,7 +538,7 @@ export const register: Register = on => {
             />
             {!draftPermanent && (
               <Input
-                key="ttl"
+                key={`ttl-${form}`}
                 label="Prazo "
                 placeholder={DEFAULT_TTL}
                 value={draftTtl}
@@ -545,11 +552,19 @@ export const register: Register = on => {
             )}
           </Box>
           <Input
-            key="value"
+            key={`value-${form}`}
             label="Valor "
             placeholder="cole o valor e tecle Enter"
             submitLabel="salvar"
-            onSubmit={(v: string) => void add($, v)}
+            value={BULLET.repeat(draftValue.length)}
+            onInput={(v: string) => {
+              draftValue = unmask(v, draftValue)
+              $.ui.invalidate('ui.render')
+            }}
+            onSubmit={(v: string) => {
+              draftValue = unmask(v, draftValue)
+              void add($)
+            }}
           />
           {notice !== '' && <Text dimColor size="footnote">{notice}</Text>}
         </Box>

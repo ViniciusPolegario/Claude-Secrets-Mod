@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { cited, mask, maskDeep, parse, parseProcKeys, parseTtl, serialize, wrap } from '../hooks/lib.ts'
+import { cited, mask, maskDeep, parse, parseProcKeys, parseTtl, serialize, unmask, wrap } from '../hooks/lib.ts'
 
 test('serialize/parse ida e volta com aspas e caracteres de shell', () => {
   const s = { B: "it's $HOME `x` \"q\"", A: 'simples' }
@@ -48,4 +48,14 @@ test('parseProcKeys pega só chaves do mod que não venceram', () => {
     { id: 0x1a2b3c4d, name: 'GH_TOKEN', timeout: '59m' },
     { id: 10, name: 'OUTRO', timeout: 'perm' },
   ])
+})
+
+test('unmask recompõe o valor real a partir do campo mascarado', () => {
+  expect(unmask('', '')).toBe('')
+  expect(unmask('ghp_abc', '')).toBe('ghp_abc')
+  expect(unmask('•••d', 'abc')).toBe('abcd')
+  expect(unmask('••', 'abc')).toBe('ab')
+  expect(unmask('', 'abc')).toBe('')
+  expect(unmask('•X••', 'abc')).toBe('aXbc')
+  expect(unmask('novo', 'abc')).toBe('novo')
 })
