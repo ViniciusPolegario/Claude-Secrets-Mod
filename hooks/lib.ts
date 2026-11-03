@@ -96,3 +96,17 @@ export function parseTtl(raw: string): number | undefined {
   }
   return end === t.length && total > 0 ? total : NaN
 }
+
+export const BULLET = '•'
+
+// O campo do valor mostra só BULLET; a cada edição recebe o texto todo, com os pontos que
+// restaram e o que foi digitado ou colado entre eles. Os pontos do começo e do fim valem o
+// começo e o fim do valor real; sem texto novo (só apagou), corta do fim.
+export function unmask(field: string, real: string): string {
+  const typed = field.match(new RegExp(`^(${BULLET}*)([^]*?)(${BULLET}*)$`))
+  const head = typed?.[1]?.length ?? 0
+  const middle = typed?.[2] ?? ''
+  if (middle === '') return real.slice(0, Math.min(head, real.length))
+  const tail = Math.min(typed?.[3]?.length ?? 0, Math.max(0, real.length - head))
+  return real.slice(0, head) + middle + real.slice(real.length - tail)
+}
